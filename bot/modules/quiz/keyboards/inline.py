@@ -43,3 +43,8 @@ def build_back_to_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 В главное меню", callback_data="main_menu")]
     ])
+
+def build_back_to_menu_without_del_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu_without_delete")]
+    ])

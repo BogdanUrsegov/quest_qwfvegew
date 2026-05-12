@@ -10,7 +10,7 @@ from bot.database.utils import (
     get_answers_for_question
 )
 from ..states import QuizState
-from ..keyboards.inline import build_quiz_kb, build_session_prompt_kb, build_main_menu_kb, build_back_to_menu_kb
+from ..keyboards.inline import build_quiz_kb, build_session_prompt_kb, build_main_menu_kb, build_back_to_menu_kb, build_back_to_menu_without_del_kb
 import logging
 
 router = Router()
@@ -62,6 +62,20 @@ async def show_location_info(call: types.CallbackQuery):
 async def back_to_main_menu(call: types.CallbackQuery):
     locations = await get_user_locations(call.from_user.id)
     await call.message.edit_text(
+        "🎓 <b>Квест «Наследие Мешкова»</b>\n\n"
+        "🗺️ <b>Как играть:</b>\n\n"
+        "1️⃣ Нажмите на название локации в меню ниже — узнаете, где она находится\n"
+        "2️⃣ Найдите эту точку в кампусе и отсканируйте QR-код на месте\n"
+        "3️⃣ Ответьте на вопросы и получите баллы!\n\n"
+        "🏆 Пройдите все 5 локаций — заберите приз в конце! 🎁",
+        reply_markup=build_main_menu_kb(locations)
+    )
+    await call.answer()
+
+@router.callback_query(F.data == "main_menu_without_delete")
+async def back_to_main_menu(call: types.CallbackQuery):
+    locations = await get_user_locations(call.from_user.id)
+    await call.message.answer(
         "🎓 <b>Квест «Наследие Мешкова»</b>\n\n"
         "🗺️ <b>Как играть:</b>\n\n"
         "1️⃣ Нажмите на название локации в меню ниже — узнаете, где она находится\n"
@@ -154,7 +168,7 @@ async def handle_answer(call: types.CallbackQuery, state: FSMContext):
         total = await get_location_total_q(loc_id)
         await call.message.answer(
             f"🎉 <b>Локация «{loc_name}» пройдена!</b>\n\n📊 <b>Ваш результат:</b> {cnt}/{total}\nПереходите к следующей точке, чтобы завершить квест! 🏃‍♂️",
-            reply_markup=build_back_to_menu_kb()
+            reply_markup=build_back_to_menu_without_del_kb()
         )
 
         if await is_quest_completed(user_id):
