@@ -167,7 +167,7 @@ async def handle_answer(call: types.CallbackQuery, state: FSMContext):
         loc_name = await get_location_name(loc_id)
         total = await get_location_total_q(loc_id)
         await call.message.answer(
-            f"🎉 <b>Локация «{loc_name}» пройдена!</b>\n\n📊 <b>Ваш результат:</b> {cnt}/{total}\nПереходите к следующей точке, чтобы завершить квест! 🏃‍♂️",
+            f"🎉 <b>Локация «{loc_name}» пройдена!</b>\n\n📊 <b>Ваш результат:</b> {cnt}/{total}\n\nПереходите к следующей точке, чтобы завершить квест! 🏃‍♂️",
             reply_markup=build_back_to_menu_without_del_kb()
         )
 
