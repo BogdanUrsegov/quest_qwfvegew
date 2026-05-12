@@ -1,0 +1,6 @@
+aiogram==3.9.0
+python-dotenv==1.0.1
+aiohttp==3.9.5
+sqlalchemy[asyncio]==2.0.30  # ← если используешь ORM
+redis==7.1.0
+aiosqlite
