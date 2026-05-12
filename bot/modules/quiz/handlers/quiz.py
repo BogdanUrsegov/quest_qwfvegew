@@ -75,6 +75,7 @@ async def back_to_main_menu(call: types.CallbackQuery):
 @router.callback_query(F.data == "main_menu_without_delete")
 async def back_to_main_menu(call: types.CallbackQuery):
     locations = await get_user_locations(call.from_user.id)
+    await call.message.edit_reply_markup(None)
     await call.message.answer(
         "🎓 <b>Квест «Наследие Мешкова»</b>\n\n"
         "🗺️ <b>Как играть:</b>\n\n"
