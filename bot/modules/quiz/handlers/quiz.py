@@ -103,7 +103,8 @@ async def _start_quiz(user_id: int, message: types.Message, loc_id: int, state: 
     progress = await get_progress(user_id, loc_id)
 
     if progress and progress["status"] == "completed":
-        await message.answer("✅ <b>Вы уже прошли этот этап!</b>\n\nТест для данной локации успешно завершён. Ищите следующую точку! 🗺️")
+        await message.answer("✅ <b>Вы уже прошли этот этап!</b>\n\nТест для данной локации успешно завершён. Ищите следующую точку! 🗺️",
+                             reply_markup=build_back_to_menu_kb())
         return
 
     # ID последнего ОТВЕЧЕННОГО вопроса
@@ -177,7 +178,7 @@ async def handle_answer(call: types.CallbackQuery, state: FSMContext):
             await call.message.answer(
                 "🏆 <b>Поздравляем! Квест пройден!</b>\n\n"
                 "✨ Вы завершили все этапы и раскрыли историю наследия Мешкова!\n\n"
-                f"📈 <b>Ваш результат:</b> <code>{total_correct}</code> правильных ответов из 15\n\n"
+                f"📈 <b>Ваш результат:</b> <b>{total_correct}</b> правильных ответов из <b>15</b>\n\n"
                 "🎁 <b>Ваш приз:</b> [здесь добавим ссылку на приз]\n\n"
                 "<i>Спасибо за участие! Ждём вас в новых квестах!</i> 🚀"
             )
