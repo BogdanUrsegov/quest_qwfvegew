@@ -81,7 +81,7 @@ async def resume_quiz(call: types.CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "quiz_cancel", QuizState.active)
 async def cancel_quiz(call: types.CallbackQuery, state: FSMContext):
     await state.clear()
-    await call.message.edit_text("✅ <i>Когда будете готовы, просто отсканируйте QR-код нужной локации, чтобы продолжить</i> 🔄")
+    await call.message.edit_text("✅ <i>Когда будете готовы, просто отсканируйте QR-код нужной локации, чтобы продолжить</i> 🔄", reply_markup=build_back_to_menu_kb())
     await call.answer()
 
 async def _start_quiz(user_id: int, message: types.Message, loc_id: int, state: FSMContext):
