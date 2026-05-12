@@ -31,7 +31,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
     if await state.get_state() == QuizState.active.state:
         await message.answer(
-            "⏸ <b>У вас активная сессия!</b>\n\nПродолжить квест или вернуться в меню?",
+            "⏸ <b>У вас незаконченный тест!</b>\n\nПродолжить отвечать или вернуться в меню?",
             reply_markup=build_session_prompt_kb()
         )
         return
@@ -153,7 +153,8 @@ async def handle_answer(call: types.CallbackQuery, state: FSMContext):
         loc_name = await get_location_name(loc_id)
         total = await get_location_total_q(loc_id)
         await call.message.answer(
-            f"🎉 <b>Локация «{loc_name}» пройдена!</b>\n\n📊 <b>Ваш результат:</b> {cnt}/{total}\nПереходите к следующей точке, чтобы завершить квест! 🏃‍♂️"
+            f"🎉 <b>Локация «{loc_name}» пройдена!</b>\n\n📊 <b>Ваш результат:</b> {cnt}/{total}\nПереходите к следующей точке, чтобы завершить квест! 🏃‍♂️",
+            reply_markup=build_back_to_menu_kb()
         )
 
         if await is_quest_completed(user_id):
