@@ -19,7 +19,7 @@ if not all([BOT_TOKEN, ADMIN_ID]):
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher(storage=MemoryStorage())
 dp.include_router(router)
-# dp.update.middleware(ChannelLoggerMiddleware(LOG_CHANNEL_ID))
+dp.update.middleware(ChannelLoggerMiddleware(LOG_CHANNEL_ID))
 
 
 # Экспортируем
