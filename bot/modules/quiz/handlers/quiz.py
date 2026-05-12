@@ -175,7 +175,11 @@ async def handle_answer(call: types.CallbackQuery, state: FSMContext):
         if await is_quest_completed(user_id):
             total_correct = await add_to_user_total(user_id, 0, return_total=True)
             await call.message.answer(
-                f"🏆 <b>Поздравляем! Квест полностью пройден!</b>\n\n📈 <b>Итоговый счёт:</b> {total_correct} правильных ответов!\n\n🎁 <b>Ваш приз:</b> [здесь добавим ссылку на приз]"
+                "🏆 <b>Поздравляем! Квест пройден!</b>\n\n"
+                "✨ Вы завершили все этапы и раскрыли историю наследия Мешкова!\n\n"
+                f"📈 <b>Ваш результат:</b> <code>{total_correct}</code> правильных ответов из 15\n\n"
+                "🎁 <b>Ваш приз:</b> [здесь добавим ссылку на приз]\n\n"
+                "<i>Спасибо за участие! Ждём вас в новых квестах!</i> 🚀"
             )
 
     await call.answer()
