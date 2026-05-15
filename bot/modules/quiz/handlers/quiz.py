@@ -16,6 +16,21 @@ import logging
 router = Router()
 logger = logging.getLogger(__name__)
 
+
+def format_quiz_message(q_text: str, answers: list[tuple[int, str]], correct_text: str | None = None, wrong_text: str | None = None) -> str:
+    """Форматирует вопрос + варианты. Подсвечивает правильный <b>жирным</b>, неверный <s>зачёркивает</s>."""
+    lines = []
+    for i, (_, text) in enumerate(answers, 1):
+        prefix = f"{i}) "
+        t_clean = text.strip()
+        if t_clean == (correct_text or "").strip():
+            lines.append(f"{prefix}<b>{text}</b>")
+        elif t_clean == (wrong_text or "").strip():
+            lines.append(f"{prefix}<s>{text}</s>")
+        else:
+            lines.append(f"{prefix}{text}")
+    return f"📍 <b>Вопрос:</b>\n\n{q_text}\n\n" + "\n".join(lines)
+
 @router.message(CommandStart())
 async def cmd_start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
@@ -117,15 +132,16 @@ async def _start_quiz(user_id: int, message: types.Message, loc_id: int, state: 
 
     # ⚠️ НЕ обновляем last_question_id в БД здесь! Это предотвратит "перескакивание".
     await state.set_state(QuizState.active)
-    await state.update_data(loc_id=loc_id, correct_cnt=0)
+    await state.update_data(loc_id=loc_id, correct_cnt=0, q_text=q['text'])
 
     if not progress:
         await create_progress(user_id, loc_id)
 
     answers = await get_answers_for_question(q["id"])
-    await message.answer(f"📍 <b>Вопрос:</b>\n\n{q['text']}", reply_markup=build_quiz_kb(q["id"], answers))
-
-
+    await message.answer(
+        format_quiz_message(q["text"], answers),
+        reply_markup=build_quiz_kb(q["id"], answers)
+    )
 @router.callback_query(F.data.startswith("ans:"), QuizState.active)
 async def handle_answer(call: types.CallbackQuery, state: FSMContext):
     user_id = call.from_user.id
@@ -135,30 +151,37 @@ async def handle_answer(call: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     loc_id, cnt = data["loc_id"], data.get("correct_cnt", 0)
 
+    # Получаем данные один раз
+    answers_list = await get_answers_for_question(q_id)
+    correct_txt = await get_correct_text(q_id)
+    expl = await get_explanation(q_id)
     is_ok = await check_answer(q_id, a_id)
+
+    # Находим текст, который выбрал пользователь
+    selected_txt = next((t for aid, t in answers_list if aid == a_id), "")
 
     if is_ok:
         cnt += 1
         await state.update_data(correct_cnt=cnt)
         feedback = "\n\n✅ <b>Верно!</b>\n\nОтличная работа! Вы на правильном пути 🚀"
+        # Подсвечиваем только правильный ответ
+        formatted_msg = format_quiz_message(data.get("q_text", ""), answers_list, correct_text=correct_txt)
     else:
-        correct_txt = await get_correct_text(q_id)
-        expl = await get_explanation(q_id)
         feedback = f"\n\n❌ <b>Неверно</b>\n\n💡 <b>Правильный ответ:</b> {correct_txt}\n\n📖 <i>{expl or 'Пояснение отсутствует...'}</i>"
+        # Правильный жирный, выбранный зачёркнут
+        formatted_msg = format_quiz_message(data.get("q_text", ""), answers_list, correct_text=correct_txt, wrong_text=selected_txt)
 
-    await call.message.edit_text(
-        text=f"{call.message.text}{feedback}",
-        reply_markup=None
-    )
+    # Редактируем сообщение: форматируем текст + фидбек, убираем кнопки
+    await call.message.edit_text(text=f"{formatted_msg}{feedback}")
 
-    # ✅ ТОЛЬКО ЗДЕСЬ фиксируем, что вопрос полностью пройден
+    # Фиксируем прогресс только после ответа
     await update_progress(user_id, loc_id, last_question_id=q_id)
 
     next_q = await get_next_question(loc_id, q_id)
     if next_q:
         answers = await get_answers_for_question(next_q["id"])
         await call.message.answer(
-            f"📍 <b>Следующий вопрос:</b>\n\n{next_q['text']}",
+            format_quiz_message(next_q["text"], answers),
             reply_markup=build_quiz_kb(next_q["id"], answers)
         )
     else:
@@ -168,23 +191,28 @@ async def handle_answer(call: types.CallbackQuery, state: FSMContext):
 
         loc_name = await get_location_name(loc_id)
         total = await get_location_total_q(loc_id)
-        await call.message.answer(
-            f"🎉 <b>Локация «{loc_name}» пройдена!</b>\n\n📊 <b>Ваш результат:</b> {cnt}/{total}\n\nПереходите к следующей точке, чтобы завершить квест! 🏃‍♂️",
-            reply_markup=build_back_to_menu_without_del_kb()
-        )
 
         if await is_quest_completed(user_id):
+            await call.message.answer(
+                f"🎉 <b>Локация «{loc_name}» пройдена!</b>\n\n📊 <b>Ваш результат:</b> {cnt}/{total}"
+            )
             total_correct = await add_to_user_total(user_id, 0, return_total=True)
             await call.message.answer(
                 "🏆 <b>Поздравляем! Квест пройден!</b>\n\n"
                 "✨ Вы завершили все этапы и раскрыли историю наследия Мешкова!\n\n"
                 f"📈 <b>Ваш результат:</b> <b>{total_correct}</b> правильных ответов из <b>15</b>\n\n"
-                "🎁 <b>Ваш приз:</b> [здесь добавим ссылку на приз]\n\n"
-                "<i>Спасибо за участие! Ждём вас в новых квестах!</i> 🚀"
+                "🎁 <b>Вечером определится победитель!</b>\n\n"
+                "<i>Спасибо за участие! Ждём вас в новых квестах!</i> 🚀",
+                reply_markup=build_back_to_menu_without_del_kb()
+            )
+        else:
+            await call.message.answer(
+                f"🎉 <b>Локация «{loc_name}» пройдена!</b>\n\n📊 <b>Ваш результат:</b> {cnt}/{total}\n\nПереходите к следующей точке, чтобы завершить квест! 🏃‍♂️",
+                reply_markup=build_back_to_menu_without_del_kb()
             )
 
     await call.answer()
-
+    
 @router.message(Command("delete_me"))
 async def cmd_delete_me(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
