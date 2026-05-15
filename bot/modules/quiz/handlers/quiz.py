@@ -29,7 +29,7 @@ def format_quiz_message(q_text: str, answers: list[tuple[int, str]], correct_tex
             lines.append(f"{prefix}<s>{text}</s>")
         else:
             lines.append(f"{prefix}{text}")
-    return f"📍 <b>Вопрос:</b>\n\n{q_text}\n\n" + "\n".join(lines)
+    return f"📍 <b>Вопрос:</b>\n\n{q_text}\n\n🔹 <b>Варианты:</b>\n" + "\n".join(lines)
 
 @router.message(CommandStart())
 async def cmd_start(message: types.Message, state: FSMContext):
